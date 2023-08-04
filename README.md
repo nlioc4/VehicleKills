@@ -1,5 +1,7 @@
 # VehicleKills
 
+Tracks all vehicle destroy events on a specific server and continent
+
 run via main.py
 Options: 
 
@@ -16,3 +18,5 @@ options:
                         
   -f {VS,NC,TR,NS}, --faction {VS,NC,TR,NS}
                         User Team Faction (default None)
+
+Terminate with Ctrl+C

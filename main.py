@@ -110,6 +110,9 @@ CONS = Console()
 # Character Cache.  Character ID -> (Name, Faction_ID)
 CHARS: dict[int: (str, int)] = {}
 
+# Auraxium Client
+CLIENT: auraxium.EventClient | None = None
+
 
 async def main():
     """Main Function"""
@@ -142,7 +145,8 @@ async def main():
     CONS.rule(f"Tracking Vehicle Kills on {ZONES.get(CONTINENT)} on {WORLDS.get(SERVER)}")
 
     # Set up Auraxium Client
-    client = auraxium.EventClient(service_id=args.get('service_id'),
+    global CLIENT
+    CLIENT = auraxium.EventClient(service_id=args.get('service_id'),
                                   ess_endpoint='wss://push.nanite-systems.net/streaming')
 
     # Define Trigger
@@ -186,7 +190,19 @@ async def main():
 
 
 if __name__ == '__main__':
+
     loop = asyncio.new_event_loop()
-    loop.create_task(main())
-    with CONS.status("Tracking..."):
-        loop.run_forever()
+    try:
+
+        main = loop.create_task(main())
+        with CONS.status("Tracking..."):
+            loop.run_forever()
+    except KeyboardInterrupt:
+        pass
+    except SystemExit:
+        pass
+    finally:
+        main.exception()
+        CONS.print("[bright_red]Exiting...")
+        if CLIENT:
+            loop.run_until_complete(CLIENT.close())

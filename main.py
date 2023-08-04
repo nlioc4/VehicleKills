@@ -107,8 +107,8 @@ VEHICLE_COLOUR = {
 # Rich Console Object
 CONS = Console()
 
-# Character Cache.  Character ID -> (Name, Faction_ID)
-CHARS: dict[int: (str, int)] = {}
+# Character Cache.  Character ID -> Formatted Name
+CHARS: dict[int: str] = {}
 
 # Auraxium Client
 CLIENT: auraxium.EventClient | None = None
@@ -150,7 +150,7 @@ async def main():
                                   ess_endpoint='wss://push.nanite-systems.net/streaming')
 
     # Define Trigger
-    @client.trigger(auraxium.event.VehicleDestroy)
+    @CLIENT.trigger(auraxium.event.VehicleDestroy)
     async def destroy_handler(evt: Union[auraxium.event.VehicleDestroy, auraxium.event]):
         """Handles VehicleDestroy events.  Prints to console w/ colour and data"""
         # Check if right continent
@@ -173,16 +173,16 @@ async def main():
         # Update character cache if required
         for char_id in (evt.attacker_character_id, evt.character_id):
             if char_id not in CHARS:
-                char = await client.get_by_id(auraxium.ps2.Character, char_id)
+                char = await CLIENT.get_by_id(auraxium.ps2.Character, char_id)
                 if not char:
                     continue
-                CHARS[char_id] = (char.name.first, char.faction_id)
+                faction_colour = FACTION_COLOURS.get(char.faction_id)
+                CHARS[char_id] = f'[{faction_colour}]{char.name}[/{faction_colour}]'
 
-        # Format character names
-        char_name, char_fac = CHARS.get(evt.attacker_character_id, ("Unknown", 0))
-        attacker = f'[{FACTION_COLOURS.get(char_fac)}]{char_name}[/{FACTION_COLOURS.get(char_fac)}]'
-        char_name, char_fac = CHARS.get(evt.character_id, ("Unknown", 0))
-        victim = f'[{FACTION_COLOURS.get(char_fac)}]{char_name}[/{FACTION_COLOURS.get(char_fac)}]'
+        # Retrieve character names
+        attacker = CHARS.get(evt.attacker_character_id, "Uncached Character")
+        victim = CHARS.get(evt.character_id, "Uncached Character")
+
         # Print to console
         killed_by = "[underline]killed by[/underline]" if good_faction else "killed by"
 

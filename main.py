@@ -6,7 +6,26 @@ Basic flow:
 Auraxium event client, receive all VehicleKills events for given continent / server
 Print events to console, colouring based on faction.
 Display Timestamp Vehicle Name, Owner Name, Killer Name
-'Timestamp: {vehiclename}({somename}) killed by {someothername}
+Timestamp: {vehiclename}({somename}) killed by {someothername}
+
+Second Column Displays estimated Nanites
+Start Tracking players on first vehicle destroy event (attacker or victim)
+Assume they start at 750 Nanites
+Add 50 Nanites per minute
+Subtract specific Nanites for vehicle type on death
+Detect Current Vehicles via kills, remove on death
+Display Nanites, along with colour code for level.  Green = 450+, Yellow = 300-450, Red = 0-300
+
+Display Looks like:
+
+Faction (NC) Tracking X Players
+PlayerName: Estimated Nanites - Current Vehicle - Last Vehicle Death (type + time ago MM:SS)
+_______________________________________________________________
+list players here
+
+Repeat for other factions
+
+
 """
 
 import argparse
@@ -15,7 +34,8 @@ import sys
 import auraxium
 from rich.console import Console
 from typing import Union
-from datetime import datetime
+import datetime
+
 
 
 #: Dictionary to retrieve faction name by id.
@@ -109,6 +129,7 @@ CONS = Console()
 
 # Character Cache.  Character ID -> Formatted Name
 CHARS: dict[int: str] = {}
+# TODO Update to store Nanites, last death event, current vehicle
 
 # Auraxium Client
 CLIENT: auraxium.EventClient | None = None
@@ -161,8 +182,8 @@ async def main():
         good_faction = True if FACTION and evt.attacker_team_id == FACTION else False
 
         # Format timestamp
-        timestamp = evt.timestamp.strftime("%H:%M:%S")
-
+        timestamp = evt.timestamp.replace(tzinfo=datetime.timezone.utc).\
+            astimezone(datetime.datetime.now().tzinfo).strftime("%H:%M:%S")
         # Check if Vehicle of Interest
         if not (vehicle := VEHICLES.get(evt.vehicle_id)):
             return
